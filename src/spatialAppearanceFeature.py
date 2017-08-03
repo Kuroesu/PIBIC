@@ -50,12 +50,16 @@ def OverlappingPatches(img,win_x,win_y,localNoNorm):
     appearanceFeature =[]
     sift = cv2.SIFT()
     for i in xrange(0,img.shape[0],2):
+        if((i+win_x) > 150):
+            break
         for j in xrange(0,img.shape[1],2):
-            centerPatch = [j+((win_x-1.0)/2.0),i+((win_y-1.0)/2.0)]#[x,y]
+            if((j+win_y) > 150):
+                break
+            centerPatch = [i+((win_x-1.0)/2.0),j+((win_y-1.0)/2.0)]#[x,y]
             kp = KeyPoint(centerPatch[0],centerPatch[1],win_x)#(x,y,tam)
             keypoints.append(kp)
             if(not localNoNorm):
-                localFeature.append(NormalizeLocal(centerPatch, float(img.shape[1]), float(img.shape[0])))
+                localFeature.append(NormalizeLocal(centerPatch, float(img.shape[0]), float(img.shape[1])))
             else:
                 localFeature.append(centerPatch)
                     
@@ -90,6 +94,8 @@ def extract(path,localNoNorm = False):
     data = pd.DataFrame(sp_feature)
     data.columns = ["feature_%d" % x for x in xrange(130)]
     return data
+
+
 
     
 # imgNames = listdir("train")

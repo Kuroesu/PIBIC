@@ -7,18 +7,12 @@ from spatialAppearanceFeature import crop_center
 from spatialAppearanceFeature import extract
 from copy import copy
 
-def DesNormalizeLocal(coord,maxX,maxY):
-    newCoord = []
-    newCoord.append(coord[0]*maxX)
-    newCoord.append(coord[1]*maxY)
-    return newCoord
-
 def getAppearance(coord,win_x,win_y,img):
+    linha = coord[1] - ((win_x-1)/2)
+    coluna = coord[0] - ((win_y-1)/2)
+   
     
-    coluna = coord[0] - ((win_x-1)/2)
-    linha = coord[1] - ((win_y-1)/2)
-    
-    a = img[linha:linha+win_y,coluna:coluna+win_x]
+    a = img[linha:linha+win_x,coluna:coluna+win_y]
 #     cv2.imshow('sa',a)
 #     cv2.waitKey()        
     return{"a":a,"l":[linha,coluna]}
@@ -91,13 +85,18 @@ for feature_index in xrange(len(featureBag)):
     componentRepre = repre_patchs[componet]#seleciona o componente que representa a classe
     local = componentRepre["l"]
     partImg = componentRepre["a"]
-    
-    for i,x in zip(xrange(int(local[0]),int(local[0]+win_y)),xrange(8)):
-        for j,y in zip(xrange(int(local[1]),int(local[1]+win_x)),xrange(8)):
+    for i,x in zip(xrange(int(local[0]),int(local[0]+win_x)),xrange(8)):
+        for j,y in zip(xrange(int(local[1]),int(local[1]+win_y)),xrange(8)):
+            print "Y:",y,"-"*50
+            print pep_r[i][j][0],"+",partImg[x][y][0]
+            print pep_r[i][j][1],"+",partImg[x][y][1]
+            print pep_r[i][j][2],"+",partImg[x][y][2]
             pep_r[i][j][0]+=partImg[x][y][0]
             pep_r[i][j][1]+=partImg[x][y][1]
             pep_r[i][j][2]+=partImg[x][y][2]
+
             countMatrix[i][j]+=1
+        a = raw_input(">>")
           
 #realiza a divisao dos pixels            
 for i in xrange(150):
