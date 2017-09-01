@@ -1,62 +1,63 @@
-from sklearn.mixture import GMM
-from sklearn.externals import joblib
-# from BDconnection import getData
 from spatialAppearanceFeature import extract
-from joint_baysian import trainJBC
-from os import listdir
-from time import time
-from numba import jit
+from sklearn.mixture import GMM 
+from numpy import transpose
 import pandas as pd
-import numpy as np
-import cv2
+from sklearn.externals import joblib
+from joint_baysian import trainJBC
+from joint_baysian import Verify
+
+#--------------------------------------------------TRAIN---------------------------------------------
+
+trainingSet = [["Aaron_Peirsol_0001.jpg","Aaron_Peirsol_0002.jpg"],#---match
+               ["Aaron_Peirsol_0003.jpg","Aaron_Peirsol_0004.jpg"],
+               ["Aaron_Sorkin_0001.jpg","Aaron_Sorkin_0001.jpg"],
+               
+               ["AJ_Cook_0001.jpg","Marsha_Thomason_0001.jpg"],  #-----miss
+               ["Aaron_Sorkin_0002.jpg","Frank_Solich_0005.jpg"],
+               ["Abdel_Nasser_Assidi_0002.jpg","Hilary_McKay_0001.jpg"]]
 
 
-
-#     
-# data = pd.DataFrame()
-# imgNames = listdir("train")
-# t = time()
-# for name in imgNames:
-#     path = "train/%s" % name
-#     dataImg,l = extract(path)
-#     print(name)
-#     print('-'*50)
-#     data = data.append(dataImg)
-# t2 = time()
-# print("tempoTotal",(t2-t)) 
-
-
+num_training_pairs = 3
+pair_cont = 0 
 num_components = 10
+
+data = pd.DataFrame()#training set pep-model
+matchPair = []#training set joint
+missPair = []#training set joint
+for pair in trainingSet:
+    print pair
+    for img in pair:
+        path = "train/%s" % img
+        bag,l = extract(path)
+        data.append(bag)
+        if(pair_cont < num_training_pairs):
+            for feature in bag.as_matrix():
+                matchPair.append(feature[:-2])
+        else:
+            for feature in bag.as_matrix():
+                missPair.append(feature[:-2])
+    pair_cont += 1
+    
+    
 # GMM = GMM(n_components=num_components,covariance_type='spherical', n_iter=20)
-t1 = time() 
-# GMM.fit(data)
-# joblib.dump(GMM,"gmm_11_10.pkl")
-GMM = joblib.load("gmm_11_10.pkl")
+# GMM.fit(data)      
+GMM = joblib.load("gmm_11_10.pkl") 
 
-t2 = time()
-print "time fit",(t2-t1)
+A,G = trainJBC(transpose(matchPair),transpose(missPair))
 
-Pair = [] 
-n = 1
-trainN = 3
-matchPairs = []
-missmatchPairs = []
-num_pair_test = 0
-num_pair_train = 0
+
+#--------------------------------------------------TEST---------------------------------------------
 
 testingSet = [["Abdullah_Gul_0013.jpg","Abdullah_Gul_0014.jpg"],#match pair
                ["AJ_Lamas_0001.jpg","Zach_Safrin_0001.jpg"]] #missmatch pair
 
-trainingSet = [["Aaron_Peirsol_0001.jpg","Aaron_Peirsol_0002.jpg"],#match
-               ["Aaron_Peirsol_0003.jpg","Aaron_Peirsol_0004.jpg"],
-               ["Aaron_Sorkin_0001.jpg","Aaron_Sorkin_0001.jpg"],
-               
-               ["AJ_Cook_0001.jpg","Marsha_Thomason_0001.jpg"],#miss
-               ["Aaron_Sorkin_0002.jpg","Frank_Solich_0005.jpg"],
-               ["Abdel_Nasser_Assidi_0002.jpg","Hilary_McKay_0001.jpg"]]
+num_testing_pair = 1
+pair_cont = 0 
 
-for pair in trainingSet:
-    set_pair = []
+match = []
+miss = []
+
+for pair in testingSet:
     path1 = "test/%s" % pair[0]
     path2 = "test/%s" % pair[1]  
         
@@ -96,30 +97,20 @@ for pair in trainingSet:
                 countClass2[k]+=1
                 pep_repreProb2[k] = predictProb2[exemple_i][k]
                 pep_repre2[k] = featuresImg2.as_matrix()[exemple_i][:-2]            
-    
-        
-    set_pair+=pep_repre1
-    set_pair+=pep_repre2
-    if(num_pair_test < n):
-        matchPairs+=set_pair
-        num_pair_test+=1
+              
+    if(pair_cont < num_testing_pair):
+        match.append([pep_repre1,pep_repre2])
+        pair_cont+=1
     else:
-        missmatchPairs+=set_pair
-        num_pair_test+=1    
-                
-
-
-
-trainJBC(matchPairs,missmatchPairs)
-                   
+        miss.append([pep_repre1,pep_repre2])    
+        pair_cont+=1
         
-
-
-
-
-
-
-
-
-
-
+        
+for pair in match:
+    for i in Verify(A, G, transpose(pair[0]),transpose(pair[1])): 
+        print len(i),len(i[0])
+print "-------------------------"
+for pair in miss:
+    for i in Verify(A, G, transpose(pair[0]),transpose(pair[1])): 
+        print len(i),len(i[0])
+                    
